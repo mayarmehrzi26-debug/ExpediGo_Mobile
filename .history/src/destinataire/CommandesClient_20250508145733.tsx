@@ -1,0 +1,268 @@
+import { useNavigation } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from "react-native";
+import { firebasestore } from "../../FirebaseConfig";
+import Header from "../../src/components/Header";
+import NavBottomClient from "../../src/components/shared/NavBottomClient";
+import FilterBar from "../../src/livraison/components/FilterBar";
+import SearchBar from "../../src/livraison/components/SearchBar";
+import CardCommande from "./components/CardCommande";
+
+interface Commande {
+  id: string;
+  origin: string;
+  destination: string;
+  status: string;
+  date: string;
+  clientName: string;
+  clientPhone: string;
+}
+
+const CommandesClient: React.FC = () => {
+  const [activeScreen] = useState("CommandesClient");
+  const [commandes, setCommandes] = useState<Commande[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("Toutes les commandes");
+  const navigation = useNavigation();
+
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  useEffect(() => {
+    const fetchCommandes = async () => {
+      try {
+        if (!currentUser) return;
+        
+        setLoading(true);
+        
+        // 1. Trouver le document client correspondant à l'utilisateur
+        const userQuery = query(
+          collection(firebasestore, "users"),
+          where("uid", "==", currentUser.uid)
+        );
+        const userSnapshot = await getDocs(userQuery);
+        
+        if (!userSnapshot.empty) {
+          const userData = userSnapshot.docs[0].data();
+          const clientId = userData.clientId;
+          
+          // Récupérer les données du client
+          const clientDoc = await getDoc(doc(firebasestore, "clients", clientId));
+          const clientData = clientDoc.data() || {};
+          
+          // Récupérer les commandes
+          await fetchClientCommandes(clientId, clientData);
+        } else {
+          // Méthode alternative si client a directement le uid
+          const clientsQuery = query(
+            collection(firebasestore, "clients"),
+            where("uid", "==", currentUser.uid)
+          );
+          const clientsSnapshot = await getDocs(clientsQuery);
+          
+          if (!clientsSnapshot.empty) {
+            const clientDoc = clientsSnapshot.docs[0];
+            const clientData = clientDoc.data();
+            await fetchClientCommandes(clientDoc.id, clientData);
+          } else {
+            console.log("Aucun client trouvé pour cet utilisateur");
+            setCommandes([]);
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des commandes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchClientCommandes = async (clientId: string, clientData: any) => {
+      const commandesQuery = query(
+        collection(firebasestore, "livraisons"),
+        where("client", "==", clientId)
+      );
+      
+      const commandesSnapshot = await getDocs(commandesQuery);
+      const commandesList: Commande[] = [];
+
+      // Récupérer toutes les adresses une seule fois pour optimisation
+      const adressesSnapshot = await getDocs(collection(firebasestore, "adresses"));
+      const adressesMap = new Map();
+      adressesSnapshot.forEach(doc => {
+        adressesMap.set(doc.id, doc.data());
+      });
+
+      for (const doc of commandesSnapshot.docs) {
+        const data = doc.data();
+        if (data.status !== "Supprimée") {
+          // Récupérer l'adresse d'origine complète
+          let originAdresse = "Adresse inconnue";
+          if (data.origin) {
+            const adresseData = adressesMap.get(data.origin);
+            if (adresseData) {
+              originAdresse = `${adresseData.rue || ''}, ${adresseData.ville || ''}, ${adresseData.pays || ''}`;
+            }
+          }
+
+          // Récupérer l'adresse de destination complète (depuis clientData)
+          let destinationAdresse = "Adresse inconnue";
+          if (clientData.address) {
+            const destAdresseData = adressesMap.get(clientData.address);
+            if (destAdresseData) {
+              destinationAdresse = `${destAdresseData.rue || ''}, ${destAdresseData.ville || ''}, ${destAdresseData.pays || ''}`;
+            } else {
+              // Si clientData.address est déjà une string (adresse complète)
+              destinationAdresse = clientData.address;
+            }
+          }
+
+          commandesList.push({
+            id: doc.id,
+            origin: originAdresse,
+            destination: destinationAdresse,
+            status: data.status || "Non traité",
+            date: data.createdAt?.toDate?.().toLocaleDateString() || "Date inconnue",
+            clientName: clientData.name || "",
+            clientPhone: clientData.phone || ""
+          });
+        }
+      }
+
+      setCommandes(commandesList);
+    };
+
+    fetchCommandes();
+  }, [currentUser]);
+
+  const filteredCommandes = commandes.filter(commande => {
+    const matchesSearch = 
+      commande.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      commande.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      commande.origin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      commande.id.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesFilter = 
+      filter === "Toutes les commandes" || 
+      commande.status === filter;
+
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleViewDetails = (commandeId: string) => {
+    navigation.navigate("CommandeDetailsClient", { commandeId });
+  };
+
+  const statusFilters = [
+    "Toutes les commandes",
+    "Non traité",
+    "En attente d'enlèvement",
+    "Picked",
+    "En cours de livraison",
+    "Livré",
+    "Retour",
+    "Annulée"
+  ];
+
+  return (
+    <View style={styles.container}>
+      <Header title="Mes Commandes" showBackButton={true} />
+      <View style={styles.separator} />
+
+      <FilterBar 
+        selectedFilter={filter}
+        onFilterChange={setFilter}
+        filterOptions={statusFilters}
+      />
+
+      <View style={styles.searchContainer}>
+        <SearchBar 
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Rechercher une commande..."
+        />
+      </View>
+
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#44076a" />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {filteredCommandes.length > 0 ? (
+            filteredCommandes.map(commande => (
+              <TouchableOpacity 
+                key={commande.id}
+                onPress={() => handleViewDetails(commande.id)}
+              >
+                <CardCommande
+                  commande={{
+                    id: commande.id,
+                    origin: commande.origin,
+                    destination: commande.destination,
+                    status: commande.status,
+                    date: commande.date,
+                    client: {
+                      name: commande.clientName,
+                      phone: commande.clientPhone
+                    }
+                  }}
+                />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>
+              {commandes.length === 0 
+                ? "Vous n'avez aucune commande" 
+                : "Aucune commande ne correspond aux filtres"}
+            </Text>
+          )}
+        </ScrollView>
+      )}
+
+      <NavBottomClient activeScreen={activeScreen} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#44076a",
+    marginVertical: 8,
+  },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 32,
+    color: "#666",
+    fontSize: 16,
+  },
+});
+
+export default CommandesClient;

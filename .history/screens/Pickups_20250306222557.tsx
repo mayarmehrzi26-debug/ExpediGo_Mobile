@@ -1,0 +1,188 @@
+import { collection, getDocs, query, Timestamp } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { firebasestore } from "../FirebaseConfig"; // Assurez-vous que ce chemin est correct
+import Header from "../src/components/Header";
+import NavBottom from "../src/components/NavBottom";
+
+const Pickups: React.FC = () => {
+  const [activeScreen, setActiveScreen] = useState("Pickups");
+  const [deliveries, setDeliveries] = useState<any[]>([]); // Type any pour l'instant
+
+  // Fonction pour extraire un ID numérique
+  const extractNumericId = (id: string, length: number = 3): number => {
+    const numericString = id.replace(/\D/g, ""); // Extraire les chiffres
+    const truncatedString = numericString.slice(0, length); // Limiter à `length` chiffres
+    return truncatedString ? parseInt(truncatedString, 10) : 0;
+  };
+
+  // Fetch Deliveries from Firebase
+  useEffect(() => {
+    const fetchDeliveries = async () => {
+      try {
+        const q = query(collection(firebasestore, "livraisons"));
+        const querySnapshot = await getDocs(q);
+
+        const deliveriesList = await Promise.all(querySnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+
+          // Récupérer les détails du produit
+          const productSnapshot = await getDocs(collection(firebasestore, "products"));
+          const productData = productSnapshot.docs.find(productDoc => productDoc.id === data.product)?.data();
+
+          // Récupérer les détails du client
+          const clientSnapshot = await getDocs(collection(firebasestore, "clients"));
+          const clientData = clientSnapshot.docs.find(clientDoc => clientDoc.id === data.client)?.data();
+
+          // Récupérer les détails de l'adresse
+          const addressSnapshot = await getDocs(collection(firebasestore, "adresses"));
+          const addressData = addressSnapshot.docs.find(addressDoc => addressDoc.id === data.address)?.data();
+
+          // Formater la date si elle est un timestamp Firestore
+          const date = data.createdAt instanceof Timestamp ? data.createdAt.toDate().toLocaleDateString() : data.date || "Date inconnue";
+
+          // Extraire un ID numérique
+          const numericId = extractNumericId(doc.id);
+
+          return {
+            id: numericId, // Utiliser l'ID numérique
+            client: clientData?.name || "Client inconnu",
+            address: addressData?.address || "Adresse inconnue",
+            product: productData?.name || "Produit inconnu",
+            payment: data.payment,
+            isExchange: data.isExchange,
+            isFragile: data.isFragile,
+            productImage: productData?.imageUrl || null,
+            date, // Ajouter la date formatée
+          };
+        }));
+
+        setDeliveries(deliveriesList);
+      } catch (error) {
+        console.error("Error fetching deliveries:", error);
+      }
+    };
+
+    fetchDeliveries();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Header title="Pickups" showBackButton={true} />
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {deliveries.length > 0 ? (
+          deliveries.map((delivery) => (
+            <View key={delivery.id} style={styles.deliveryCard}>
+              <Text style={styles.deliveryTitle}>{delivery.id}</Text> 
+              <Text style={styles.deliveryTitle}>{delivery.client}</Text>
+              <Text style={styles.label}>Destination: {delivery.address}</Text>
+              <Text style={styles.deliverySubtitle}>Paiement: {delivery.payment}</Text>
+              <Text style={styles.deliverySubtitle}>Date: {delivery.date}</Text>
+              {delivery.isFragile && <Text style={styles.deliverySubtitle}>Colis fragile</Text>}
+
+              <TouchableOpacity style={styles.detailsButton}>
+                <Text style={styles.detailsButtonText}>Voir les détails</Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noDeliveriesText}>Aucune livraison disponible</Text>
+        )}
+      </ScrollView>
+
+      <NavBottom activeScreen={activeScreen} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+  content: {
+    flexGrow: 1,
+    padding: 20,
+  },
+  deliveryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  deliveryTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#27251F",
+  },
+  deliverySubtitle: {
+    fontSize: 14,
+    color: "#A7A9B7",
+    marginTop: 5,
+  },
+  productImage: {
+    width: 100,
+    height: 100,
+    marginTop: 10,
+    borderRadius: 10,
+  },
+  detailsButton: {
+    backgroundColor: "#54E598",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  detailsButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  noDeliveriesText: {
+    fontSize: 16,
+    color: "#A7A9B7",
+    textAlign: "center",
+    marginTop: 20,
+  },
+  labels: {
+    flexDirection: "column",
+    gap: 10,
+  },
+  label: {
+    color: "#959595",
+    fontFamily: "Avenir",
+    fontSize: 9,
+    fontWeight: "500",
+  },
+  values: {
+    flexDirection: "column",
+    gap: 9,
+  },
+  destination: {
+    color: "#1B2128",
+    fontFamily: "Avenir",
+    fontSize: 9,
+    fontWeight: "500",
+  },
+  payment: {
+    color: "#FD5A1E",
+    fontFamily: "Avenir",
+    fontSize: 9,
+    fontWeight: "500",
+  },
+  date: {
+    color: "#1B2128",
+    fontFamily: "Avenir",
+    fontSize: 9,
+    fontWeight: "500",
+  },
+});
+
+export default Pickups;

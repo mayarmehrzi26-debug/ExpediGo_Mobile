@@ -1,0 +1,425 @@
+import { RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { RootStackParamList } from '../../NavigationTypes';
+import Header from "../../src/components/Header";
+import StatusBadge from "../../src/components/StatusBadge";
+import { CommandesPresenter } from '../presenters/CommandesPresenter';
+import { LivraisonModel } from '../models/LivraisonModel';
+
+type CommandeDetailsRouteProp = RouteProp<RootStackParamList, 'CommandeDetails'>;
+
+interface CommandeDetailsProps {
+  route: CommandeDetailsRouteProp;
+  navigation: StackNavigationProp<RootStackParamList, 'CommandeDetails'>;
+}
+
+interface CommandeDetailsData {
+  id: string;
+  origin: string;
+  destination: string;
+  clientName: string;
+  clientPhone: string;
+  status: string;
+  payment: string;
+  isFragile: boolean;
+  createdAt: Date;
+  totalAmount: number;
+  livreur: string;
+  notes: string;
+}
+
+const CommandeDetails: React.FC<CommandeDetailsProps> = ({ route, navigation }) => {
+  const { commandeId } = route.params;
+  const [commande, setCommande] = useState<CommandeDetailsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [presenter] = useState(new CommandesPresenter());
+  const [model] = useState(new LivraisonModel());
+
+  useEffect(() => {
+    const fetchCommandeDetails = async () => {
+      try {
+        // 1. Récupérer les données de base de la commande
+        const commandeDoc = await model.getCommandesWithAdresses(commandeId);
+        if (!commandeDoc || commandeDoc.length === 0) {
+          console.error('Commande non trouvée');
+          return;
+        }
+
+        const commandeData = commandeDoc[0];
+        
+        // 2. Récupérer les détails du client
+        const clientDetails = commandeData.client 
+          ? await model.getClientByUserId(commandeData.client)
+          : null;
+
+        // 3. Récupérer les détails du livreur si disponible
+        let livreurName = 'Non assigné';
+        if (commandeData.livreurId) {
+          const livreurDoc = await model.getClientByUserId(commandeData.livreurId);
+          if (livreurDoc) {
+            livreurName = livreurDoc.name || livreurName;
+          }
+        }
+
+        setCommande({
+          id: commandeId,
+          origin: commandeData.originAddress || 'Adresse inconnue',
+          destination: clientDetails?.address || 'Adresse inconnue',
+          clientName: clientDetails?.name || 'Client inconnu',
+          clientPhone: clientDetails?.phone || '',
+          status: commandeData.status || 'En attente',
+          payment: commandeData.payment || 'Non spécifié',
+          isFragile: commandeData.isFragile || false,
+          createdAt: commandeData.createdAt?.toDate?.() || new Date(),
+          totalAmount: commandeData.totalAmount || 0,
+          livreur: livreurName,
+          notes: commandeData.notes || '',
+        });
+      } catch (err) {
+        console.error('Erreur:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCommandeDetails();
+  }, [commandeId, model]);
+
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#44076a" />
+      </View>
+    );
+  }
+
+  if (!commande) {
+    return (
+      <View style={styles.container}>
+        <Header title="Détails de commande" showBackButton={true} />
+        <View style={styles.noDetailsContainer}>
+          <Text style={styles.noDetailsText}>Aucun détail trouvé pour cette commande</Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <Header 
+        title="Détails de commande" 
+        showBackButton={true}
+      />
+      
+      <View style={styles.packageImageContainer}>
+        <Image 
+          source={require("../../assets/image3.png")}
+          style={styles.packageImage} 
+          resizeMode="contain"
+        />
+      </View>
+
+      <ScrollView>
+        <View style={styles.card}>
+          <View style={styles.contactSection}>
+            <View style={styles.rowBetween}>
+              <View>
+                <Text style={styles.sectionTitle}>{commande.clientName}</Text>
+                <Text style={styles.descriptionText}>Client</Text>
+              </View>
+              <View style={styles.contactButtons}>
+                <TouchableOpacity style={styles.contactButton}>
+                  <Icon name="message-text" size={20} color="#44076a" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.contactButton}>
+                  <Icon name="phone" size={20} color="#44076a" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {commande.status !== "Non traité" && commande.status !== "Annulée" && (
+            <View style={styles.contactSection}>
+              <View style={styles.rowBetween}>
+                <View>
+                  <Text style={styles.sectionTitle}>Livreur</Text>
+                  <Text style={styles.descriptionText}>{commande.livreur}</Text>
+                </View>
+                <View style={styles.contactButtons}>
+                  <TouchableOpacity style={styles.contactButton}>
+                    <Icon name="message-text" size={20} color="#44076a" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.contactButton}>
+                    <Icon name="phone" size={20} color="#44076a" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.cardHeader}>
+            <Text style={styles.productName}>Commande #{commande.id.substring(0, 8)}</Text>
+          </View>
+          
+          <View style={styles.statusBadge}>
+            <StatusBadge status={commande.status} />
+          </View>
+
+          <View style={styles.descriptionContainer}>
+            <Text style={styles.descriptionText}>
+              De <Text style={styles.boldText}>{commande.origin}</Text> vers <Text style={styles.boldText}>{commande.destination}</Text>
+            </Text>
+            
+            {commande.status === "En cours de livraison" && (
+              <TouchableOpacity 
+                style={styles.routeButton} 
+                onPress={() => navigation.navigate('TrackingScreen', { 
+                  deliveryId: commande.id,
+                  fromAddress: commande.origin,
+                  toAddress: commande.destination
+                })}
+              >
+                <Icon name="map-marker-path" size={16} color="#44076a" />
+                <Text style={styles.routeButtonText}>Voir l'itinéraire</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.infoBadgesContainer}>
+            <View style={styles.infoBadge}>
+              <Icon name="credit-card" size={16} color="#44076a" />
+              <Text style={styles.infoBadgeText}>{commande.payment}</Text>
+            </View>
+            <View style={styles.infoBadge}>
+              <Icon name="calendar" size={16} color="#44076a" />
+              <Text style={styles.infoBadgeText}>
+                {commande.createdAt.toLocaleDateString('fr-FR')}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <View style={styles.detailLabelContainer}>
+                <Icon name="information" size={16} color="#44076a" />
+                <Text style={styles.detailLabel}> Statut:</Text>
+              </View>
+              <Text style={styles.detailValue}>{commande.status}</Text>
+            </View>
+            
+            <View style={styles.detailRow}>
+              <View style={styles.detailLabelContainer}>
+                <Icon name="phone" size={16} color="#44076a" />
+                <Text style={styles.detailLabel}> Téléphone:</Text>
+              </View>
+              <Text style={styles.detailValue}>{commande.clientPhone}</Text>
+            </View>
+            
+            {commande.isFragile && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelContainer}>
+                  <Icon name="alert-octagon" size={16} color="#44076a" />
+                  <Text style={styles.detailLabel}> Type:</Text>
+                </View>
+                <Text style={styles.detailValue}>Colis fragile</Text>
+              </View>
+            )}
+            
+            {commande.notes && (
+              <View style={styles.detailRow}>
+                <View style={styles.detailLabelContainer}>
+                  <Icon name="note-text" size={16} color="#44076a" />
+                  <Text style={styles.detailLabel}> Notes:</Text>
+                </View>
+                <Text style={styles.detailValue}>{commande.notes}</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.priceQuantityContainer}>
+            <View>
+              <Text style={styles.priceLabel}>Montant total :</Text>
+              <Text style={styles.priceValue}>{commande.totalAmount ?? 0} dt</Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F7F7F7',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#F7F7F7',
+  },
+  packageImageContainer: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    paddingTop: 32,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  productName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  statusBadge: {
+    alignSelf: 'flex-end',
+    marginBottom: 5
+  },
+  descriptionContainer: {
+    marginBottom: 24,
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  boldText: {
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  routeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  routeButtonText: {
+    fontSize: 14,
+    color: '#44076a',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  infoBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 14,
+  },
+  infoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 6,
+    marginBottom: 8,
+  },
+  infoBadgeText: {
+    fontSize: 14,
+    color: '#333333',
+    marginLeft: 8,
+  },
+  detailsContainer: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  detailLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#333333',
+    fontWeight: '500',
+  },
+  priceQuantityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  priceValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  noDetailsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 16,
+    margin: 20,
+    alignItems: 'center',
+  },
+  noDetailsText: {
+    fontSize: 16,
+    color: '#666666',
+  },
+  packageImage: {
+    width: 270,
+    height: 200,
+  },
+  contactSection: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    marginHorizontal: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#44076a',
+    marginBottom: 12,
+  },
+  contactButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  contactButton: {
+    backgroundColor: '#F0EBF8',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contactButtonText: {
+    marginLeft: 8,
+    color: '#44076a',
+    fontWeight: '500',
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+});
+
+export default CommandeDetails;

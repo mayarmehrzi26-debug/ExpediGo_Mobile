@@ -1,0 +1,47 @@
+import React, { useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import ColisCard from "../../src/components/ColisCard";
+import Header from "../../src/components/Header";
+import NavBottomClient from "../../src/components/NavBottomClient";
+
+const Colis: React.FC = () => {
+  const [activeScreen, setActiveScreen] = useState("Colis");
+  
+
+  return (
+    <View style={styles.container}>
+      <Header title="Mes colis" showBackButton={true} />
+      <View style={styles.separator1} />
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <ColisCard></ColisCard>
+            </ScrollView>
+
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+  content: {
+    flexGrow: 1,
+    paddingTop: 0,
+    padding: 20,
+  },
+ 
+  
+  
+ 
+  separator1: {
+    height: 1,
+    backgroundColor: "#877DAB",
+    marginVertical: 8,
+    marginBottom: 22,
+  },
+ 
+});
+
+export default Colis;

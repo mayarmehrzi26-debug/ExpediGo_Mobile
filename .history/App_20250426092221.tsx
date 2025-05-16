@@ -1,0 +1,281 @@
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import React from "react";
+import { PaperProvider } from "react-native-paper";
+import AjoutAdress from "./src/adress/view/AjoutAdressView";
+import ListeAdressesView from "./src/adress/view/ListeAdressesView";
+import AjoutClientView from "./src/clients/view/AjoutClientView";
+import ClientDetailsView from "./src/clients/view/ClientDetailsView";
+import ListeClientsView from "./src/clients/view/ListeClientsView";
+import ModifierClient from "./src/clients/view/ModifierClient";
+import AjoutProd from "./src/produit/view/AjoutProdView";
+import EditProduct from "./src/produit/view/EditProductView";
+import ProductList from "./src/produit/view/ProductListView";
+import AddTicket from "./src/ticket/view/AddTicketView";
+
+import BarcodeScanner from "./screens/BarcodeScanner";
+import Caisse from "./screens/Caisse";
+import Chatbot from "./screens/Chatbot";
+import Colis from "./screens/Client/Colis";
+import HomeClient from "./screens/Client/HomeClient";
+import ProfileClient from "./screens/Client/ProfileClient";
+import EmailScreen from "./screens/EmailScreen";
+import EmailSender from "./screens/EmailSender";
+import EmballageCommand from "./screens/EmballageCommand";
+import EmballageList from "./screens/EmballageList";
+import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
+import HomeLivreur from "./screens/Livreur/HomeLivreur";
+import MesCommandes from "./screens/Livreur/MesCommandes";
+import PackageDetailsLiv from "./screens/Livreur/PackageDetailsLiv";
+import Login from "./src";
+import NouvelleLivraison from "./screens/NouvelleLivraison";
+import OnboardingScreen from "./screens/OnboardingScreen";
+import OTPScreen from "./screens/OTPScreen";
+import PackageDetailss from "./screens/PackageDetailss";
+import Pickups from "./screens/Pickups";
+import PickupAdresses from "./screens/Profile/PickupAddresses";
+import SignUpScreen from "./screens/SignUpScreen";
+import Tracking from "./screens/Tracking";
+import TrackingScreen from "./screens/TrackingScreen";
+import HomeScreen from "./src/expediteur/HomeScreen";
+import Livraison from "./src/expediteur/Livraison";
+import PackageDetails from "./src/expediteur/PackageDetails";
+import BadClients from "./src/expediteur/Profile/BadClients";
+import BusinessInfo from "./src/expediteur/Profile/BusinessInfo";
+import InfoPerso from "./src/expediteur/Profile/InfoPerso";
+import Profile from "./src/expediteur/Profile/Profile";
+import NouvelleLivraisonScreen from "./src/livraison/view/NouvelleLivraisonScreen";
+import Support from "./src/ticket/view/TicketListView";
+
+const App: React.FC = () => {
+  const Stack = createStackNavigator<RootStackParamList>();
+
+  return (
+    <PaperProvider>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Profile">
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SignUp"
+          component={SignUpScreen}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="EmailSender"
+          component={EmailSender}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="OTPScreen"
+          component={OTPScreen}
+          options={{ headerShown: false }}
+        />
+          <Stack.Screen
+          name="ListeAdresses"
+          component={ListeAdressesView}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="ProductList"
+          component={ProductList}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="EditProduct"
+          component={EditProduct}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ModifierClient"
+          component={ModifierClient}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Login"
+          component={Login}
+          options={{ headerShown: false }}
+        />
+          <Stack.Screen
+          name="ForgotPasswordScreen"
+          component={ForgotPasswordScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="HomeScreen"
+          component={HomeScreen}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="EmballageCommand"
+          component={EmballageCommand}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="ListeClients" component={ListeClientsView} options={{ headerShown: false }}/>
+        <Stack.Screen name="ClientDetails" component={ClientDetailsView} options={{ headerShown: false }} />
+
+        <Stack.Screen
+          name="NouvelleLivraison"
+          component={NouvelleLivraison}
+          options={{ headerShown: false }}
+        />
+               <Stack.Screen
+          name="NouvelleLivraisonScreen"
+          component={NouvelleLivraisonScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EmballageList"
+          component={EmballageList}
+          options={{ headerShown: false }}
+        />
+
+        
+        <Stack.Screen
+          name="AjoutClient"
+          component={AjoutClientView}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="AjoutProd"
+          component={AjoutProd}
+          options={{ headerShown: false }}
+        />
+       <Stack.Screen
+          name="AjoutAdress"
+          component={AjoutAdress}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Pickups"
+          component={Pickups}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Livraison"
+          component={Livraison}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Support"
+          component={Support}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="AddTicket"
+          component={AddTicket}
+          options={{ headerShown: false }}
+        />
+        
+        <Stack.Screen
+          name="Profile"
+          component={Profile}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="InfoPerso"
+          component={InfoPerso}
+          options={{ headerShown: false }}
+        />
+          <Stack.Screen
+          name="BadClients"
+          component={BadClients}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BusinessInfo"
+          component={BusinessInfo}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="PickupAdresses"
+          component={PickupAdresses}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Caisse"
+          component={Caisse}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="BarcodeScanner"
+          component={BarcodeScanner}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+        name="PackageDetails"
+         component={PackageDetails} 
+         options={{headerShown: false  }}
+         />
+          <Stack.Screen 
+        name="PackageDetailss"
+         component={PackageDetailss} 
+         options={{headerShown: false  }}
+         />
+         <Stack.Screen 
+        name="PackageDetailsLiv"
+         component={PackageDetailsLiv} 
+         options={{headerShown: false  }}
+
+
+         />
+ <Stack.Screen
+          name="HomeLivreur"
+          component={HomeLivreur}
+          options={{ headerShown: false }}
+
+        />
+        <Stack.Screen
+          name="MesCommandes"
+          component={MesCommandes}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="TrackingScreen"
+          component={TrackingScreen}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Tracking"
+          component={Tracking}
+          options={{ headerShown: false }}
+        />
+          <Stack.Screen
+          name="HomeClient"
+          component={HomeClient}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="Colis"
+          component={Colis}
+          options={{ headerShown: false }}
+        />
+        
+         <Stack.Screen
+          name="Chatbot"
+          component={Chatbot}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EmailScreen"
+          component={EmailScreen}
+          options={{ headerShown: false }}
+        />
+<Stack.Screen
+          name="ProfileClient"
+          component={ProfileClient}
+          options={{ headerShown: false }}
+        />
+        
+      </Stack.Navigator>
+     
+    </NavigationContainer>
+    </PaperProvider>
+
+  );
+};
+
+export default App;

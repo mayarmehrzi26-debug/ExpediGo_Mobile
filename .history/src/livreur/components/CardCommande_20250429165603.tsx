@@ -1,0 +1,131 @@
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import React from "react";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  updateCommandeStatus,
+  updateOrderStatus,
+} from "../services/commandeService"; // ✅ importer les 2 services
+
+interface CardProps {
+  commande: {
+    id: string;
+    type: "emballage" | "livraison";
+    origin?: string;
+    destination?: string;
+    date?: string;
+  };
+  onRefresh: () => void;
+}
+
+const CardCommande: React.FC<CardProps> = ({ commande, onRefresh }) => {
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0.3,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const handleLivrer = async () => {
+    if (commande.type === "emballage") {
+      await updateOrderStatus(commande.id, "en cours");
+    } else {
+      await updateCommandeStatus(commande.id, "en cours");
+    }
+    onRefresh();
+  };
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardDetails}>
+          <Text style={styles.orderNumber}>
+            {commande.type === "livraison"
+              ? `Commande ${commande.id}`
+              : `Emballage ${commande.id}`}
+          </Text>
+          <Text style={styles.orderText}>
+            Origine : {commande.origin || "Non spécifiée"}
+          </Text>
+          <Text style={styles.orderText}>
+            Destination : {commande.destination || "Non spécifiée"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.dateContainer}>
+        <MaterialIcons name="date-range" size={16} color="black" />
+        <Text style={styles.orderText}>{commande.date || "Date inconnue"}</Text>
+      </View>
+
+      <TouchableOpacity style={styles.button} onPress={handleLivrer}>
+        <Text style={styles.buttonText}>Je livre</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#F1EEFF",
+    padding: 15,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    borderRadius: 12,
+    elevation: 5,
+    marginTop: 16,
+    marginHorizontal: 22,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  cardDetails: {
+    flex: 1,
+  },
+  orderNumber: {
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  orderText: {
+    color: "#555",
+    fontSize: 14,
+    marginTop: 2,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+  },
+  button: {
+    backgroundColor: "#877DAB",
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});
+
+export default CardCommande;

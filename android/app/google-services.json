@@ -1,0 +1,127 @@
+{
+  "project_info": {
+    "project_number": "911106373842",
+    "firebase_url": "https://intigo-37c79-default-rtdb.firebaseio.com",
+    "project_id": "intigo-37c79",
+    "storage_bucket": "intigo-37c79.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911106373842:android:fbccf7d8e31864650f950b",
+        "android_client_info": {
+          "package_name": "com.example.app_livraisonnn"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "911106373842-tc1mirste0fk9ssin35hsudt3h8qbp0u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEHssMIGY8RyYTHxM5c1DN2ekw4_GgnFw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "911106373842-tc1mirste0fk9ssin35hsudt3h8qbp0u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "911106373842-8ou1oo0e395dqs486qp3dgub3s641bmk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.company.intigoapp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911106373842:android:d99c48cbcba7afe70f950b",
+        "android_client_info": {
+          "package_name": "com.example.intigoapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "911106373842-tc1mirste0fk9ssin35hsudt3h8qbp0u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEHssMIGY8RyYTHxM5c1DN2ekw4_GgnFw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "911106373842-tc1mirste0fk9ssin35hsudt3h8qbp0u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "911106373842-8ou1oo0e395dqs486qp3dgub3s641bmk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.company.intigoapp"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911106373842:android:9dc10c339ee63f450f950b",
+        "android_client_info": {
+          "package_name": "com.mycompany.myapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "911106373842-3ud45vb78rouh447paqm1n3it0dr8u1j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mycompany.myapp",
+            "certificate_hash": "ef939195a0c97102e9ba60311a48cce896c9ff79"
+          }
+        },
+        {
+          "client_id": "911106373842-tc1mirste0fk9ssin35hsudt3h8qbp0u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEHssMIGY8RyYTHxM5c1DN2ekw4_GgnFw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "911106373842-tc1mirste0fk9ssin35hsudt3h8qbp0u.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "911106373842-8ou1oo0e395dqs486qp3dgub3s641bmk.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.company.intigoapp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

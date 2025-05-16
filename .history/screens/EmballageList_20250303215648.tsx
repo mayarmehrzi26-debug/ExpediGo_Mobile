@@ -1,0 +1,146 @@
+import { Ionicons } from "@expo/vector-icons";
+import { collection, getDocs } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { firebasestore } from "../FirebaseConfig";
+
+interface Order {
+  id: string;
+  size: string;
+  quantity: number;
+  totalPrice: number;
+  price: number;
+  timestamp: string; // Changement ici pour stocker la date sous forme de chaîne formatée
+}
+
+interface EmballageListProps {
+  navigation: any;
+}
+
+const EmballageList: React.FC<EmballageListProps> = ({ navigation }) => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(firebasestore, "orders"));
+        const ordersData: Order[] = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            size: data.size,
+            quantity: data.quantity,
+            totalPrice: data.totalPrice,
+            price: data.price,
+            timestamp: data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleDateString("fr-FR") : "Non disponible",
+          };
+        }) as Order[];
+        setOrders(ordersData);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des commandes :", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  const renderItem = ({ item }: { item: Order }) => (
+    <View style={styles.row}>
+      <Text style={styles.cell}>{item.timestamp}</Text>
+      <Text style={styles.cell}>{item.size}</Text>
+      <Text style={styles.cell}>{item.quantity}</Text>
+      <Text style={styles.cell}>{item.price} DT</Text>
+      <Text style={styles.cell}>{item.totalPrice.toFixed(2)} DT</Text>
+      <Text style={styles.cell}>{item.totalPrice.toFixed(2)} DT</Text>
+
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="black" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Commandes d'emballage</Text>
+      </View>
+
+      <View style={styles.tableHeader}>
+        <Text style={styles.headerCell}>Crée le</Text>
+        <Text style={styles.headerCell}>Taille</Text>
+        <Text style={styles.headerCell}>Quantité</Text>
+        <Text style={styles.headerCell}>PU</Text>
+        <Text style={styles.headerCell}>PT</Text>
+        <Text style={styles.headerCell}>Status</Text>
+
+      </View>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#FD5A1E" style={styles.loadingIndicator} />
+      ) : (
+        <FlatList data={orders} renderItem={renderItem} keyExtractor={(item) => item.id} />
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 51,
+    paddingBottom: 14,
+  },
+  backButton: {
+    width: 46,
+    height: 47,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    color: "#27251F",
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+    flex: 1,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    backgroundColor: "#DDD",
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  headerCell: {
+    flex: 1,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#CCC",
+  },
+  cell: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 10,
+
+  },
+  loadingIndicator: {
+    marginTop: 20,
+  },
+});
+
+export default EmballageList;

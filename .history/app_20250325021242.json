@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "ExpediGo",
+    "slug": "ExpediGo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Autoriser $(PRODUCT_NAME) à utiliser votre position en arrière-plan pour le suivi des livraisons."
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "fetch"],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cette application a besoin d'accéder à votre position en permanence pour suivre les livraisons en temps réel.",
+        "NSLocationAlwaysUsageDescription": "Cette application a besoin d'accéder à votre position en permanence pour suivre les livraisons en temps réel.",
+        "NSLocationWhenInUseUsageDescription": "Cette application a besoin d'accéder à votre position pour suivre les livraisons en temps réel."
+      },
+      "bundleIdentifier": "com.mycompany.ExpediGo"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.mycompany.ExpediGo",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "CAMERA"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "VOTRE_CLE_API_GOOGLE_MAPS"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}

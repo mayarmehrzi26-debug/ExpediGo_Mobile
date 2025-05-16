@@ -1,0 +1,228 @@
+import { Entypo } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native"; // Importer useNavigation
+import { collection, getDocs, query, Timestamp } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Divider, Menu } from "react-native-paper";
+import { firebasestore } from "../FirebaseConfig";
+import FileExplorer from "../src/components/FileExplorer";
+import FilterBar from "../src/components/FilterBar";
+import Header from "../src/components/Header";
+import NavBottom from "../src/components/NavBottom";
+import StatusBadge from "../src/components/StatusBadge"; // Importer StatusBadge
+
+const Pickups: React.FC = () => {
+  const [deliveries, setDeliveries] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [menuVisibleForId, setMenuVisibleForId] = useState<string | null>(null);
+  const [selectedCards, setSelectedCards] = useState<{ [key: number]: boolean }>({});
+  const navigation = useNavigation(); // Hook pour la navigation
+  const [activeScreen, setActiveScreen] = useState("Livraisons");
+
+  const openMenu = (id: string) => setMenuVisibleForId(id);
+  const closeMenu = () => setMenuVisibleForId(null);
+
+  useEffect(() => {
+    const fetchDeliveries = async () => {
+      try {
+        const q = query(collection(firebasestore, "livraisons"));
+        const querySnapshot = await getDocs(q);
+        const deliveriesList = await Promise.all(
+          querySnapshot.docs.map(async (doc) => {
+            const data = doc.data();
+            const productSnapshot = await getDocs(collection(firebasestore, "products"));
+            const productData = productSnapshot.docs.find(
+              (productDoc) => productDoc.id === data.product
+            )?.data();
+
+            const clientSnapshot = await getDocs(collection(firebasestore, "clients"));
+            const clientData = clientSnapshot.docs.find(
+              (clientDoc) => clientDoc.id === data.client
+            )?.data();
+
+            const addressSnapshot = await getDocs(collection(firebasestore, "adresses"));
+            const addressData = addressSnapshot.docs.find(
+              (addressDoc) => addressDoc.id === data.address
+            )?.data();
+
+            const date =
+              data.createdAt instanceof Timestamp
+                ? data.createdAt.toDate().toLocaleDateString()
+                : data.date || "Date inconnue";
+
+            return {
+              id: doc.id,
+              client: clientData?.name || "Client inconnu",
+              address: addressData?.address || "Adresse inconnue",
+              product: productData?.name || "Produit inconnu",
+              payment: data.totalAmount,
+              date,
+              status: data.status || "Entrée au centrale",
+            };
+          })
+        );
+        setDeliveries(deliveriesList);
+      } catch (error) {
+        console.error("Error fetching deliveries:", error);
+      }
+    };
+
+    fetchDeliveries();
+  }, []);
+
+  // Filtrer les commandes par statut
+  const filteredDeliveries = deliveries.filter(
+    (delivery) =>
+      ["En attente d'enlèvement", "Non traité", "Annulée"].includes(delivery.status) &&
+      (delivery.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        delivery.id.toString().includes(searchQuery))
+  );
+
+  const toggleCardSelection = (id: number) => {
+    setSelectedCards((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const handleViewDetails = (delivery: any) => {
+    navigation.navigate("PackageDetails", { scannedData: delivery.id });
+  };
+
+  return (
+    <View style={styles.container}>
+      <Header title="Pickups" showBackButton={true} />
+      <View style={styles.separator1} />
+
+      <FilterBar
+        deliveries={deliveries}
+        filterOptions={["Toutes les pickups", "En attente d'enlèvement", "Annulée"]}
+      />
+      <FileExplorer searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {filteredDeliveries.length > 0 ? (
+          filteredDeliveries.map((delivery) => (
+            <View key={delivery.id} style={styles.deliveryCard}>
+              <View style={styles.cardHeader}>
+                <TouchableOpacity onPress={() => toggleCardSelection(delivery.id)}>
+                  <View
+                    style={[styles.checkbox, selectedCards[delivery.id] && styles.checkboxChecked]}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.deliveryId}>{delivery.id}</Text>
+                <Menu
+                  visible={menuVisibleForId === delivery.id}
+                  onDismiss={closeMenu}
+                  anchor={
+                    <TouchableOpacity onPress={() => openMenu(delivery.id)}>
+                      <Entypo name="dots-three-vertical" size={20} color="black" />
+                    </TouchableOpacity>
+                  }
+                >
+                  <Menu.Item onPress={() => handleViewDetails(delivery)} title="View details" />
+                  <Divider />
+                  <Menu.Item onPress={() => console.log("Edit pickup")} title="Edit pickup" />
+                </Menu>
+              </View>
+              <Text style={styles.deliveryClient}>{delivery.client}</Text>
+              <View style={styles.separator} />
+              <View style={styles.dateContainer}>
+                <Text style={styles.deliverySubtitle}>Status</Text>
+                <StatusBadge status={delivery.status} />
+              </View>
+              <View style={styles.dateContainer}>
+                <Text style={styles.deliverySubtitle}>Destination</Text>
+                <Text style={styles.deliveryValue}>{delivery.address}</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noDeliveriesText}>Aucune livraison disponible</Text>
+        )}
+      </ScrollView>
+      <NavBottom activeScreen={activeScreen}></NavBottom>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F7F7F7",
+  },
+  content: {
+    flexGrow: 1,
+    paddingTop: 0,
+    padding: 20,
+  },
+  deliveryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  deliveryId: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#27251F",
+    marginRight: 173,
+  },
+  deliveryClient: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#1B2128",
+    marginTop: 5,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#E0E0E0",
+    marginVertical: 8,
+  },
+  separator1: {
+    height: 1,
+    backgroundColor: "#877DAB",
+    marginVertical: 8,
+    marginBottom: 22,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 5,
+  },
+  deliveryValue: {
+    fontSize: 14,
+    color: "#1B2128",
+    fontWeight: "bold",
+  },
+  noDeliveriesText: {
+    fontSize: 16,
+    color: "#A7A9B7",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: "#877DAB",
+    borderColor: "#877DAB",
+  },
+});
+
+export default Pickups;

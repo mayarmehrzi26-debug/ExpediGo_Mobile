@@ -1,0 +1,50 @@
+import { collection, getDocs, query } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import Svg, { Circle, Rect, Text } from "react-native-svg";
+import { firebasestore } from "../../FirebaseConfig";
+
+
+
+const StatusBadge: React.FC= () => {
+  const [statusText, setStatusText] = useState("Chargement...");
+  const [status, setStatus] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStatus= async () => {
+      try {
+        const q = query(collection(firebasestore, "livraisons"));
+    
+      const querySnapshot = await getDocs(q);
+
+        const deliveriesList = await Promise.all(querySnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+
+         
+          const statusSnapshot = await getDocs(collection(firebasestore, "Status"));
+          const statusData = statusSnapshot.docs.find(statusdocs => statusdocs.id === data.status)?.data();
+
+          return {
+            status: statusData?.nomStat , // Ajouter un champ "status"
+          };
+        }));
+
+        setStatus(deliveriesList);
+      } catch (error) {
+        console.error("Error fetching deliveries:", error);
+      }
+    };
+
+    fetchStatus();
+  }, []);
+  return (
+    <Svg width={129} height={29} viewBox="0 0 109 19" fill="none">
+      <Rect y={0.813} width={108.836} height={17.923} rx={8.962} fill="#FF4E51" />
+      <Circle cx={8.514} cy={9.775} r={2.591} fill="white" />
+      <Text fill="white" fontSize={8.995} fontFamily="Avenir" x={15.548} y={12.627}>
+        {status}
+      </Text>
+    </Svg>
+  );
+};
+
+export default StatusBadge;

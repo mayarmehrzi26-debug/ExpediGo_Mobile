@@ -1,0 +1,26 @@
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+
+const Statusbadge2: React.FC<{ status: string }> = ({ status }) => {
+  return (
+    <View style={styles.badge}>
+      
+      <Text style={styles.badgeText}>{status}</Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  badge: {
+    backgroundColor: "#877DAB", // Couleur par défaut
+    borderRadius: 15,
+    paddingVertical: 5,
+    paddingHorizontal: 20,
+  },
+  badgeText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});
+
+export default Statusbadge2;

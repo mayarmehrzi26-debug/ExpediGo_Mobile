@@ -1,0 +1,180 @@
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { firebaseAuth, firebasestore } from "../../../FirebaseConfig";
+
+export const fetchEmballages = async () => {
+  try {
+    const q = query(
+      collection(firebasestore, "orders"), 
+      where("status", "==", "non traité")
+    );
+    const querySnapshot = await getDocs(q);
+    
+    const emballages = [];
+    
+    for (const docSnap of querySnapshot.docs) {
+      const data = docSnap.data();
+      
+      // Récupération des données utilisateur avec sécurité
+      let userEmail = "Email inconnu";
+      let displayName = "Utilisateur inconnu";
+      try {
+        if (data.createdBy) {
+          const userDoc = await getDoc(doc(firebasestore, "users", data.createdBy));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            userEmail = userData?.email || userEmail;
+            displayName = userData?.name || displayName;
+          }
+        }
+      } catch (error) {
+        console.error("Erreur récupération utilisateur:", error);
+      }
+      
+      // Récupération des données d'adresse avec sécurité
+      let fullAddress = "Adresse inconnue";
+      try {
+        if (data.addressId) {
+          const addressDoc = await getDoc(doc(firebasestore, "adresses", data.addressId));
+          if (addressDoc.exists()) {
+            const addressData = addressDoc.data();
+            fullAddress = addressData?.address || fullAddress;
+          }
+        }
+      } catch (error) {
+        console.error("Erreur récupération adresse:", error);
+      }
+      
+      // Formatage de la date
+      let formattedDate = "Date inconnue";
+      try {
+        if (data.timestamp?.toDate) {
+          const dateObj = data.timestamp.toDate();
+          formattedDate = dateObj.toLocaleString('fr-FR');
+        }
+      } catch (error) {
+        console.error("Erreur formatage date:", error);
+      }
+      
+      emballages.push({
+        id: docSnap.id,
+        ...data,
+        userInfo: {
+          email: userEmail,
+          displayName: displayName
+        },
+        addressInfo: {
+          fullAddress: fullAddress
+        },
+        formattedDate: formattedDate
+      });
+    }
+    
+    return emballages;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des emballages:", error);
+    return [];
+  }
+};
+export const fetchUserEmballages = async () => {
+  try {
+    const user = firebaseAuth.currentUser;
+    if (!user) throw new Error("Utilisateur non connecté");
+
+    const q = query(
+      collection(firebasestore, "orders"),
+      where("assignedTo", "==", user.uid)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    return await processEmballages(querySnapshot);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des emballages utilisateur:", error);
+    return [];
+  }
+};
+
+// Fonction helper pour traiter les documents
+const processEmballages = async (querySnapshot) => {
+  const emballages = [];
+    
+  for (const docSnap of querySnapshot.docs) {
+    const data = docSnap.data();
+    
+    // Récupération des données utilisateur
+    let userEmail = "Email inconnu";
+    let displayName = "Utilisateur inconnu";
+    try {
+      if (data.createdBy) {
+        const userDoc = await getDoc(doc(firebasestore, "users", data.createdBy));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          userEmail = userData?.email || userEmail;
+          displayName = userData?.name || displayName;
+        }
+      }
+    } catch (error) {
+      console.error("Erreur récupération utilisateur:", error);
+    }
+    
+    // Récupération des données d'adresse
+    let fullAddress = "Adresse inconnue";
+    try {
+      if (data.addressId) {
+        const addressDoc = await getDoc(doc(firebasestore, "adresses", data.addressId));
+        if (addressDoc.exists()) {
+          const addressData = addressDoc.data();
+          fullAddress = addressData?.address || fullAddress;
+        }
+      }
+    } catch (error) {
+      console.error("Erreur récupération adresse:", error);
+    }
+    
+    // Formatage de la date
+    let formattedDate = "Date inconnue";
+    try {
+      if (data.timestamp?.toDate) {
+        const dateObj = data.timestamp.toDate();
+        formattedDate = dateObj.toLocaleString('fr-FR');
+      }
+    } catch (error) {
+      console.error("Erreur formatage date:", error);
+    }
+    
+    emballages.push({
+      id: docSnap.id,
+      ...data,
+      userInfo: {
+        email: userEmail,
+        displayName: displayName
+      },
+      addressInfo: {
+        fullAddress: fullAddress
+      },
+      formattedDate: formattedDate
+    });
+  }
+  
+  return emballages;
+};
+export const updateEmballageStatus = async (emballageId: string, status: "non traité" | "en cours" | "traité") => {
+  try {
+    const user = firebaseAuth.currentUser;
+    if (!user) throw new Error("Utilisateur non connecté");
+
+    const updateData: any = { 
+      status,
+      updatedAt: new Date() 
+    };
+
+    if (status === "en cours") {
+      updateData.assignedTo = user.uid;
+    }
+
+    await updateDoc(doc(firebasestore, "orders", emballageId), updateData);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de l'emballage:", error);
+    return false;
+  }
+};
