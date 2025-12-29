@@ -1,0 +1,131 @@
+import { CashModel, PendingTransaction, Transaction, WithdrawalRequest } from "../model/CashModel";
+
+export interface CashView {
+  displayBalance(balance: {
+    total: string;
+    disponible: string;
+    enAttente: string;
+    currency: string;
+  }): void;
+  displayTransactions(transactions: Transaction[]): void;
+  displayWithdrawalRequests(requests: WithdrawalRequest[]): void;
+  showError(message: string): void;
+  showSuccess(message: string): void;
+  setWithdrawalButtonEnabled(enabled: boolean): void;
+  showWithdrawalDialog(maxAmount: number): Promise<{ amount: number; method: "Espèces" | "Virement" }>;
+  displayPendingTransactions(transactions: PendingTransaction[]): void;
+  showTransactionSelectionDialog(transactions: PendingTransaction[]): Promise<string[]>;
+}
+
+export class CashPresenter {
+  private view: CashView;
+  private model: CashModel;
+
+  constructor(view: CashView, userId: string) {
+    this.view = view;
+    this.model = new CashModel(userId);
+  }
+
+ async loadData(): Promise<void> {
+  try {
+    const [balance, transactions, requests] = await Promise.all([
+      this.model.getBalance(),
+      this.model.getTransactions(),
+      this.model.getWithdrawalRequests()
+    ]);
+
+    // Ajoutez ces lignes pour le débogage
+    const hasPendingRequest = await this.model.hasPendingWithdrawal();
+    const canWithdraw = !hasPendingRequest && balance.enAttente > 0;
+    console.log(`Can withdraw: ${canWithdraw} (pending: ${hasPendingRequest}, balance: ${balance.enAttente})`);
+    
+    this.view.setWithdrawalButtonEnabled(canWithdraw);
+    
+    this.view.displayBalance({
+      total: (balance.disponible + balance.enAttente).toFixed(3),
+      disponible: balance.disponible.toFixed(3),
+      enAttente: balance.enAttente.toFixed(3),
+      currency: balance.currency
+    });
+    
+    this.view.displayTransactions(transactions);
+    this.view.displayWithdrawalRequests(requests);
+  } catch (error) {
+    console.error('[CashPresenter] Error loading data:', error);
+    this.view.showError(error.message || "Erreur lors du chargement des données");
+  }
+}
+
+async prepareWithdrawal(): Promise<void> {
+  try {
+    console.log("[1/3] Fetching pending transactions...");
+    const pendingTransactions = await this.model.getPendingTransactions();
+    console.log(`[2/3] Found ${pendingTransactions.length} pending transactions`);
+
+    if (pendingTransactions.length === 0) {
+      this.view.showError("Aucune transaction non traitée disponible");
+      return;
+    }
+
+    // Afficher la sélection des transactions
+    const selectedIds = await this.view.showTransactionSelectionDialog(pendingTransactions);
+    console.log(`[3/3] User selected ${selectedIds.length} transactions`);
+    
+    if (selectedIds.length === 0) return;
+
+    // Récupérer la transaction sélectionnée
+    const selectedTransaction = pendingTransactions.find(t => t.id === selectedIds[0]);
+    if (!selectedTransaction) {
+      throw new Error("Transaction sélectionnée introuvable");
+    }
+
+    // Sélection du mode de paiement
+    const paymentMethod = await this.view.showPaymentMethodDialog();
+    
+    // Marquer la transaction comme "En attente"
+    await this.model.markTransactionsAsPending([selectedTransaction.id]);
+    
+    // Créer la demande de versement
+    await this.model.requestWithdrawal(
+      selectedTransaction.amount, 
+      paymentMethod, 
+      [selectedTransaction.id]
+    );
+    
+    this.view.showSuccess(`Demande de versement (${paymentMethod}) de ${selectedTransaction.amount.toFixed(3)} dt envoyée`);
+    await this.loadData();
+
+  } catch (error) {
+    console.error("[FINAL ERROR]", error);
+    if (error.message !== "User cancelled") {
+      this.view.showError(error.message || "Erreur lors de la demande");
+    }
+  }
+}
+
+  async requestWithdrawal(amount: number): Promise<void> {
+    try {
+      const balance = await this.model.getBalance();
+
+      if (balance.enAttente <= 0) {
+        throw new Error("Vous n'avez pas de solde en attente");
+      }
+
+      if (amount > balance.enAttente) {
+        throw new Error("Le montant demandé dépasse votre solde en attente");
+      }
+
+      const { method } = await this.view.showWithdrawalDialog(balance.enAttente);
+      await this.model.requestWithdrawal(amount, method);
+
+      this.view.showSuccess(`Demande de versement de ${amount.toFixed(3)} dt envoyée`);
+      this.view.setWithdrawalButtonEnabled(false);
+      await this.loadData();
+    } catch (error) {
+      console.error('[CashPresenter] Error requesting withdrawal:', error);
+      if (error.message !== "User cancelled") {
+        this.view.showError(error.message || "Erreur lors de la demande de versement");
+      }
+    }
+  }
+}
